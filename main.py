@@ -82,12 +82,11 @@ class Main(QMainWindow, Ui_main):
     def __init__(self, parent=None):
         super(Main,self).__init__(parent)
         self.setupUi(self)
-
         self.welbank = Banco()
 
         self.tela_inicio.criar_conta_button.clicked.connect(self.abrirTelaCadastro)
         self.tela_inicio.logar_conta_button.clicked.connect(self.abrirTelaLogin)
-        self.tela_inicio.voltar_inicio_button.clicked.connect(self.sair)
+        self.tela_inicio.sair_inicio_button.clicked.connect(self.sair)
 
         self.tela_cadastro.cad_cad_button.clicked.connect(self.botaoCadastrar)
         self.tela_cadastro.voltar_cad_button.clicked.connect(self.voltarInicio)
@@ -113,25 +112,36 @@ class Main(QMainWindow, Ui_main):
 
         self.tela_historico.voltar_dep_button.clicked.connect(self.voltarUsuario)
 
+
+        
         
     def botaoCadastrar(self):
         nome = self.tela_cadastro.nome_cad_edit.text()
-        sobrenome = self.tela_cadastro.sobnome_cad_edit.text()
         cpf = self.tela_cadastro.cpf_cad_edit.text()
         senha = self.tela_cadastro.senha_cad_edit.text()
 
-        if not (nome == '' or sobrenome == '' or cpf == '' or senha == ''):
-            cliente = Cliente(nome, sobrenome, cpf, senha)
+        if not (nome == '' or cpf == '' or senha == ''):
+            cliente = Cliente(nome, cpf, senha)
             saldo = 10.00
             conta = Conta(cliente,saldo)
 
-            if(self.welbank.cadastra(conta)):
+            if(self.welbank.cadastra(conta) != False):
                 QMessageBox.information(None,'WELBANK', 'Cadastro realizado!')
                 self.tela_cadastro.nome_cad_edit.setText('')
-                self.tela_cadastro.sobnome_cad_edit.setText('')
                 self.tela_cadastro.cpf_cad_edit.setText('')
                 self.tela_cadastro.senha_cad_edit.setText('')
                 self.abrirTelaInicio()
+            else:
+                QMessageBox.information(None, 'WELBANK', 'Esse CPF já está cadastrado!')
+                self.tela_cadastro.nome_cad_edit.setText('')
+                self.tela_cadastro.cpf_cad_edit.setText('')
+                self.tela_cadastro.senha_cad_edit.setText('')
+        else:
+            QMessageBox.information(None, 'Welison', 'Todos os campos precisam ser preenchidos!')
+            self.tela_cadastro.nome_cad_edit.setText('')
+            self.tela_cadastro.cpf_cad_edit.setText('')
+            self.tela_cadastro.senha_cad_edit.setText('')
+
 
     def botaoLogar(self):
         self.cpf = self.tela_login.cpf_login_edit.text()
@@ -141,7 +151,6 @@ class Main(QMainWindow, Ui_main):
         if (self.user):            
             QMessageBox.information(None, 'WELBANK', 'Login realizado!')
             self.tela_cadastro.nome_cad_edit.setText('')
-            self.tela_cadastro.sobnome_cad_edit.setText('')
             self.tela_cadastro.cpf_cad_edit.setText('')
             self.tela_cadastro.senha_cad_edit.setText('')
 
@@ -222,9 +231,8 @@ class Main(QMainWindow, Ui_main):
             if (item._titular._cpf == conta._titular._cpf):
                 numero_conta = str(item._numero_conta)     
         self.QtStack.setCurrentIndex(3)
-        self.tela_usuario.senha_user_edit.setText(numero_conta) #nome de var correto = número da conta
+        self.tela_usuario.nconta_user_edit.setText(numero_conta)
         self.tela_usuario.nome_user_edit.setText(conta._titular._nome)
-        self.tela_usuario.sobnome_user_edit.setText(conta._titular._sobrenome)
         self.tela_usuario.cpf_user_edit.setText(conta._titular._cpf)
         self.tela_usuario.saldo_user_edit.setText('R$: ' + str(conta._saldo))
 

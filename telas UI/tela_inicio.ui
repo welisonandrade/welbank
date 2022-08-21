@@ -60,6 +60,9 @@
     </property>
    </widget>
    <widget class="QPushButton" name="criar_conta_button">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>206</x>
@@ -77,11 +80,26 @@
       <bold>false</bold>
      </font>
     </property>
+    <property name="mouseTracking">
+     <bool>false</bool>
+    </property>
     <property name="styleSheet">
      <string notr="true">background-color: rgb(192, 191, 188);</string>
     </property>
     <property name="text">
      <string>Cadastrar conta</string>
+    </property>
+    <property name="checkable">
+     <bool>false</bool>
+    </property>
+    <property name="autoDefault">
+     <bool>false</bool>
+    </property>
+    <property name="default">
+     <bool>false</bool>
+    </property>
+    <property name="flat">
+     <bool>false</bool>
     </property>
    </widget>
    <widget class="QPushButton" name="logar_conta_button">
@@ -129,7 +147,7 @@
      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; color:#f8f8f2;&quot;&gt;&amp;copy;welisoncopyright&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="voltar_inicio_button">
+   <widget class="QPushButton" name="sair_inicio_button">
     <property name="geometry">
      <rect>
       <x>552</x>

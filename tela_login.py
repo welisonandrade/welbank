@@ -73,6 +73,7 @@ class Tela_Login(object):
         self.senha_login_edit = QtWidgets.QLineEdit(self.centralwidget)
         self.senha_login_edit.setGeometry(QtCore.QRect(283, 270, 181, 25))
         self.senha_login_edit.setStyleSheet("background-color: rgb(255, 255, 255);")
+        self.senha_login_edit.setEchoMode(QtWidgets.QLineEdit.Password)
         self.senha_login_edit.setObjectName("senha_login_edit")
         self.entrar_login_button = QtWidgets.QPushButton(self.centralwidget)
         self.entrar_login_button.setGeometry(QtCore.QRect(266, 340, 111, 31))
