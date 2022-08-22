@@ -1,5 +1,6 @@
 import sys
 import weakref
+import random
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
 from matplotlib.animation import AbstractMovieWriter
@@ -15,16 +16,7 @@ from tela_sacar import Tela_Sacar
 from tela_transferir import Tela_Transferir
 from tela_usuario import Tela_Usuario
 from tela_historico import Tela_Historico
-
-# cliente = Cliente('Welison', 'Andrade', 12345678912)
-# cliente2 = Cliente('José', 'Moura', 78945612378)
-# welbank = Banco()
-
-# conta = Conta(1234, cliente, 500.00)
-# conta2 = Conta(4321, cliente2, 100.00)
-
-# welbank.cadastra(conta._titular)
-# welbank.cadastra(conta2._titular)
+from mydb import My_db
 
 class Ui_main(QtWidgets.QWidget):
     def setupUi(self, Main):
@@ -82,7 +74,11 @@ class Main(QMainWindow, Ui_main):
     def __init__(self, parent=None):
         super(Main,self).__init__(parent)
         self.setupUi(self)
+        
         self.welbank = Banco()
+        self.db = My_db()
+        self.db.inicia()
+        self.db.executa()
 
         self.tela_inicio.criar_conta_button.clicked.connect(self.abrirTelaCadastro)
         self.tela_inicio.logar_conta_button.clicked.connect(self.abrirTelaLogin)
@@ -112,6 +108,8 @@ class Main(QMainWindow, Ui_main):
 
         self.tela_historico.voltar_dep_button.clicked.connect(self.voltarUsuario)
 
+        
+
 
         
         
@@ -122,20 +120,23 @@ class Main(QMainWindow, Ui_main):
 
         if not (nome == '' or cpf == '' or senha == ''):
             cliente = Cliente(nome, cpf, senha)
-            saldo = 10.00
+            saldo = 0.0
             conta = Conta(cliente,saldo)
+            n_conta = random.randint(10000,99999)
 
-            if(self.welbank.cadastra(conta) != False):
-                QMessageBox.information(None,'WELBANK', 'Cadastro realizado!')
-                self.tela_cadastro.nome_cad_edit.setText('')
-                self.tela_cadastro.cpf_cad_edit.setText('')
-                self.tela_cadastro.senha_cad_edit.setText('')
-                self.abrirTelaInicio()
+            if(self.db.insere(cpf, nome, senha, saldo, n_conta)!= False):
+                if(self.welbank.cadastra(conta)!= False):
+                    QMessageBox.information(None,'WELBANK', 'Cadastro realizado!')
+                    self.tela_cadastro.nome_cad_edit.setText('')
+                    self.tela_cadastro.cpf_cad_edit.setText('')
+                    self.tela_cadastro.senha_cad_edit.setText('')
+                    self.abrirTelaInicio()
             else:
                 QMessageBox.information(None, 'WELBANK', 'Esse CPF já está cadastrado!')
                 self.tela_cadastro.nome_cad_edit.setText('')
                 self.tela_cadastro.cpf_cad_edit.setText('')
                 self.tela_cadastro.senha_cad_edit.setText('')
+
         else:
             QMessageBox.information(None, 'Welison', 'Todos os campos precisam ser preenchidos!')
             self.tela_cadastro.nome_cad_edit.setText('')
