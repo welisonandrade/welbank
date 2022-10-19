@@ -1,3 +1,4 @@
+from click import command
 import mysql.connector
 class My_db:
     def __init__(self):
@@ -6,11 +7,14 @@ class My_db:
 
     def inicia (self):
         sql = '''CREATE DATABASE IF NOT EXISTS bank_db;'''
-        sql2 = '''CREATE TABLE IF NOT EXISTS bank_account(cpf VARCHAR(11) PRIMARY KEY, nome VARCHAR(16), senha VARCHAR(15), saldo VARCHAR(15), nmr_conta VARCHAR(15));'''
+        sql2 = '''USE bank_db;'''
+        sql3 = '''CREATE TABLE IF NOT EXISTS bank_account(cpf VARCHAR(11) PRIMARY KEY, nome VARCHAR(16), senha VARCHAR(15), saldo VARCHAR(15), nmr_conta VARCHAR(15));'''
         
         self.cursor = self.con.cursor()
         self.cursor.execute(sql)
         self.cursor.execute(sql2)
+        self.cursor.execute(sql3)
+        self.cursor = self.con.cursor(buffered=True)
 
     def executa(self):
         if self.con.is_connected():
@@ -23,11 +27,6 @@ class My_db:
     def insere(self,cpf, nome, senha, saldo, n_conta):
         try:
             sql = '''INSERT INTO bank_account (cpf, nome, senha, saldo, nmr_conta) VALUES (%s, %s, %s, %s, %s);'''
-            '''a = str(p.titular.cpf)
-            b = str(p.titular.nome)
-            c = str(p.titular.senha)
-            d = str(p.saldo)
-            e = str(p.numero_conta)'''
 
             val = (cpf, nome, senha, saldo, n_conta)
             self.cursor.execute(sql,val)
@@ -36,13 +35,21 @@ class My_db:
         except:
             return False
 
-    def selecionaCPF(self,cpf):
-         self.cursor.execute('SELECT * FROM Cadastro WHERE cpf = {};'.format(str(cpf)))
-         try:
+    def selecionaBD(self,coluna,cpf):
+        try:
+            string = 'SELECT {} FROM bank_account WHERE cpf = "{}";'.format(str(coluna),str(cpf))
+            self.cursor.execute(string)
             result = self.cursor.fetchone()
             return result
-         except:
-             return False
+        except:
+            print("false")
+            return False
+
+    def updateSaldo(self, saldo, cpf):
+        string = 'UPDATE bank_account SET saldo = "{}" WHERE cpf = "{}";'.format(str(saldo),str(cpf))
+
+        self.cursor.execute(string)
+        self.con.commit()
 
     def fecha(self):
         self.cursor.close()

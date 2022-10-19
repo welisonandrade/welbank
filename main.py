@@ -1,13 +1,9 @@
+#import weakref
+#from matplotlib.animation import AbstractMovieWriter
 import sys
-import weakref
 import random
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
-from matplotlib.animation import AbstractMovieWriter
-
-from banco import Banco
-from conta import Conta
-from cliente import Cliente
 from tela_inicio import Tela_Inicio
 from tela_cadastro import Tela_Cadastro
 from tela_login import Tela_Login
@@ -69,13 +65,13 @@ class Ui_main(QtWidgets.QWidget):
         self.QtStack.addWidget(self.stack7)
 
 
-
 class Main(QMainWindow, Ui_main):
     def __init__(self, parent=None):
         super(Main,self).__init__(parent)
         self.setupUi(self)
         
-        self.welbank = Banco()
+
+        #self.welbank = Banco()
         self.db = My_db()
         self.db.inicia()
         self.db.executa()
@@ -108,31 +104,31 @@ class Main(QMainWindow, Ui_main):
 
         self.tela_historico.voltar_dep_button.clicked.connect(self.voltarUsuario)
 
-        
 
-
-        
-        
     def botaoCadastrar(self):
         nome = self.tela_cadastro.nome_cad_edit.text()
         cpf = self.tela_cadastro.cpf_cad_edit.text()
         senha = self.tela_cadastro.senha_cad_edit.text()
 
         if not (nome == '' or cpf == '' or senha == ''):
-            cliente = Cliente(nome, cpf, senha)
-            saldo = 0.0
-            conta = Conta(cliente,saldo)
-            n_conta = random.randint(10000,99999)
 
-            if(self.db.insere(cpf, nome, senha, saldo, n_conta)!= False):
-                if(self.welbank.cadastra(conta)!= False):
+            if (cpf.isnumeric()):
+                saldo = 10.0
+                n_conta = random.randint(100000,999999)
+
+                if(self.db.insere(cpf, nome, senha, saldo, n_conta)!= False):
                     QMessageBox.information(None,'WELBANK', 'Cadastro realizado!')
                     self.tela_cadastro.nome_cad_edit.setText('')
                     self.tela_cadastro.cpf_cad_edit.setText('')
                     self.tela_cadastro.senha_cad_edit.setText('')
                     self.abrirTelaInicio()
+                else:
+                    QMessageBox.information(None, 'WELBANK', 'Esse CPF já está cadastrado!')
+                    self.tela_cadastro.nome_cad_edit.setText('')
+                    self.tela_cadastro.cpf_cad_edit.setText('')
+                    self.tela_cadastro.senha_cad_edit.setText('')
             else:
-                QMessageBox.information(None, 'WELBANK', 'Esse CPF já está cadastrado!')
+                QMessageBox.information(None, 'WELBANK', 'CPF deve conter apenas números!')
                 self.tela_cadastro.nome_cad_edit.setText('')
                 self.tela_cadastro.cpf_cad_edit.setText('')
                 self.tela_cadastro.senha_cad_edit.setText('')
@@ -147,26 +143,41 @@ class Main(QMainWindow, Ui_main):
     def botaoLogar(self):
         self.cpf = self.tela_login.cpf_login_edit.text()
         self.senha = self.tela_login.senha_login_edit.text()
-        self.user = self.welbank.busca(self.cpf,self.senha)
+        
+        try:
+            self.usuario = self.db.selecionaBD("*", self.cpf)
+            self.user = list(self.usuario)
+            
+            if not (self.cpf == ''  or self.senha == ''):
 
-        if (self.user):            
-            QMessageBox.information(None, 'WELBANK', 'Login realizado!')
-            self.tela_cadastro.nome_cad_edit.setText('')
-            self.tela_cadastro.cpf_cad_edit.setText('')
-            self.tela_cadastro.senha_cad_edit.setText('')
+                if((self.cpf == self.user[0]) and (self.senha == self.user[2])):            
+                    QMessageBox.information(None, 'WELBANK', 'Login realizado!')
+                    self.tela_cadastro.nome_cad_edit.setText('')
+                    self.tela_cadastro.cpf_cad_edit.setText('')
+                    self.tela_cadastro.senha_cad_edit.setText('')
+                    self.abrirTelaUsuario()
+                else:
+                    QMessageBox.information(None, 'WELBANK', 'CPF e/ou senha incorreto(s)!')
+                    self.tela_login.cpf_login_edit.setText('')
+                    self.tela_login.senha_login_edit.setText('')
 
-            self.abrirTelaUsuario(self.user)
-        else:
-            QMessageBox.information(None, 'WELBANK', 'CPF e/ou senha incorreto(s)!')
+            else:
+                QMessageBox.information(None, 'Welison', 'Todos os campos precisam ser preenchidos!')
+                self.tela_login.cpf_login_edit.setText('')
+                self.tela_login.senha_login_edit.setText('')
+        except:
+            QMessageBox.information(None, 'Welison', 'Usuário inexistente!')
             self.tela_login.cpf_login_edit.setText('')
             self.tela_login.senha_login_edit.setText('')
+
     
     def botaoSacar(self):
         valor = self.tela_sacar.valor_sacar_edit.text()
         try:
             valor = float(valor)
             if(valor > 0):
-                if (self.user.saca(valor)):
+                verifica = self.saca(valor, self.user)
+                if(verifica):
                     string = 'Saque de R$:' + str(valor) + ' realizado!'
                     QMessageBox.information(None, 'WELBANK', string)
                     self.tela_sacar.valor_sacar_edit.setText('')
@@ -174,23 +185,25 @@ class Main(QMainWindow, Ui_main):
                     QMessageBox.information(None, 'WELBANK', 'Valor informado é maior que saldo!')
                     self.tela_sacar.valor_sacar_edit.setText('')
             else:
-                QMessageBox.information(None, 'WELBANK', 'Digite apenas valores positivos!')
+                QMessageBox.information(None, 'WELBANK', 'Digite apenas valores positivos maiores que zero!')
                 self.tela_sacar.valor_sacar_edit.setText('')
         except:
             QMessageBox.information(None, 'WELBANK', 'Informe apenas números!')
             self.tela_sacar.valor_sacar_edit.setText('')
 
+
     def botaoDepositar(self):
         valor = self.tela_depositar.valor_dep_edit.text()
         try:
             valor = float(valor)
+            float(self.user[3])
             if(valor > 0):
-                if(self.user.deposita(valor)):
+                if(self.deposita(valor, self.user)):
                     string = 'Valor de R$: ' + str(valor) + ' depositado'
                     QMessageBox.information(None, 'WELBANK', string)
                     self.tela_depositar.valor_dep_edit.setText('')
             else:
-                QMessageBox.information(None, 'WELBANK', 'Digite apenas valores positivos!')
+                QMessageBox.information(None, 'WELBANK', 'Digite apenas valores positivos maiores que zero!')
                 self.tela_depositar.valor_dep_edit.setText('')        
         except:
             QMessageBox.information(None, 'WELBANK', 'Informe apenas números!')
@@ -199,22 +212,41 @@ class Main(QMainWindow, Ui_main):
     def botaoTransferir(self):
         self.cpfDestino = self.tela_transferir.cpfdestino_trans_edit.text()
         self.valorTransf = self.tela_transferir.valor_trans_edit.text()
-        obj = self.welbank.existeCPF(self.cpfDestino)
-        if (obj):
-            if (self.cpfDestino!= self.user._titular._cpf):
-                if(float(self.valorTransf) > 0):
-                    self.user.transfere(obj, int(self.valorTransf))
-                    string = 'Transferência de R$: ' + str(self.valorTransf) + ' realizada!'
-                    QMessageBox.information(None, 'WELBANK', string)
+        self.usuarioDestino = self.db.selecionaBD("*", str(self.cpfDestino))
+        verifica = isinstance(self.usuarioDestino, tuple)
+        
+        try:
+            self.valorTransf = float(self.valorTransf)
+
+            if (verifica):
+                self.userDestino = list(self.usuarioDestino)
+                if (self.userDestino[0] != self.user[0]):
+                    if (self.valorTransf > 0):
+                        if(self.transfere(self.valorTransf, self.user, self.userDestino)):
+                            string = 'Transferência de R$: ' + str(self.valorTransf) + ' realizada!'
+                            QMessageBox.information(None, 'WELBANK', string)
+                            self.tela_transferir.cpfdestino_trans_edit.setText('')
+                            self.tela_transferir.valor_trans_edit.setText('')
+                        else:
+                            QMessageBox.information(None, 'WELBANK', 'Erro na transferência. Valor maior que saldo!')
+                            self.tela_transferir.cpfdestino_trans_edit.setText('')
+                            self.tela_transferir.valor_trans_edit.setText('')
+                    else:
+                        QMessageBox.information(None, 'WELBANK', 'Erro na transferência. Valor negativo digitado.')
+                        self.tela_transferir.cpfdestino_trans_edit.setText('')
+                        self.tela_transferir.valor_trans_edit.setText('')
                 else:
-                    QMessageBox.information(None, 'WELBANK', 'Erro na transferência. Valor negativo digitado.')
+                    QMessageBox.information(None, 'WELBANK', 'Impossível transferir pra mesma conta!')
+                    self.tela_transferir.cpfdestino_trans_edit.setText('')
                     self.tela_transferir.valor_trans_edit.setText('')
             else:
-                QMessageBox.information(None, 'WELBANK', 'Impossível transferir pra mesma conta!')
+                QMessageBox.information(None, 'WELBANK', 'Erro na transferência. Conta inexistente!')
                 self.tela_transferir.cpfdestino_trans_edit.setText('')
                 self.tela_transferir.valor_trans_edit.setText('')
-        else:
-            QMessageBox.information(None, 'WELBANK', 'Erro na transferência!')
+        except:
+            QMessageBox.information(None, 'WELBANK', 'Informe apenas números!')
+            self.tela_transferir.cpfdestino_trans_edit.setText('')
+            self.tela_transferir.valor_trans_edit.setText('')
 
     def abrirTelaInicio(self):
         self.QtStack.setCurrentIndex(0)
@@ -227,15 +259,16 @@ class Main(QMainWindow, Ui_main):
         self.tela_login.senha_login_edit.setText('')
         self.QtStack.setCurrentIndex(2)
 
-    def abrirTelaUsuario(self,conta):
-        for item in self.welbank._contasLogaveis:
+    def abrirTelaUsuario(self):
+        '''for item in self.welbank._contasLogaveis:
             if (item._titular._cpf == conta._titular._cpf):
-                numero_conta = str(item._numero_conta)     
+                numero_conta = str(item._numero_conta)     '''
+        
         self.QtStack.setCurrentIndex(3)
-        self.tela_usuario.nconta_user_edit.setText(numero_conta)
-        self.tela_usuario.nome_user_edit.setText(conta._titular._nome)
-        self.tela_usuario.cpf_user_edit.setText(conta._titular._cpf)
-        self.tela_usuario.saldo_user_edit.setText('R$: ' + str(conta._saldo))
+        self.tela_usuario.nconta_user_edit.setText(str(self.user[4]))
+        self.tela_usuario.nome_user_edit.setText(str(self.user[1]))
+        self.tela_usuario.cpf_user_edit.setText(str(self.user[0]))
+        self.tela_usuario.saldo_user_edit.setText('R$: ' + str(self.user[3]))
 
     def abrirTelaSacar(self):
         self.QtStack.setCurrentIndex(4)
@@ -247,17 +280,45 @@ class Main(QMainWindow, Ui_main):
         self.QtStack.setCurrentIndex(6)
 
     def abrirTelaHistorico(self):
-        self.QtStack.setCurrentIndex(7)
+        QMessageBox.information(None, 'WELBANK', 'Essa opção ainda não está disponível.')
+        '''self.QtStack.setCurrentIndex(7)
         for item  in self.user.historico.transacoes:
-            self.tela_historico.hist_hist_listwidget.addItem(item)
+            self.tela_historico.hist_hist_listwidget.addItem(item)'''
 
     def voltarInicio(self):
         self.QtStack.setCurrentIndex(0)
 
     def voltarUsuario(self):
-        a = self.welbank.busca(self.cpf,self.senha)
-        self.abrirTelaUsuario(a)
+        self.abrirTelaUsuario()
         self.QtStack.setCurrentIndex(3)
+
+    def saca(self,valor,conta):
+        conta[3] = float(conta[3])
+
+        if(valor > conta[3]):
+            return False
+        else:
+            conta[3] -= valor
+            saldo = str(conta[3])
+            cpf = str(conta[0])
+            self.db.updateSaldo(saldo,cpf)
+            return True
+
+
+    def deposita(self, valor,conta):
+        float(valor)
+        conta[3] += valor
+        self.db.updateSaldo(conta[3],conta[0])
+        return True
+
+    
+    def transfere(self, valor, conta, contaDestino):
+        retirou = self.saca(valor, conta)
+        if (retirou):
+            self.deposita(valor, contaDestino)
+            return True
+        else:
+            return False
 
     def sair(self):
         sys.exit(app.exec())
